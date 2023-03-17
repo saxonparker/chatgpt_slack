@@ -1,0 +1,16 @@
+[[source]]
+name = "pypi"
+verify_ssl = true
+url = "https://pypi.org/simple"
+
+[dev-packages]
+pylint = "*"
+
+[packages]
+requests = "*"
+boto3 = "*"
+openai = "*"
+imgurpython = "*"
+
+[requires]
+python_version = "3.9"
