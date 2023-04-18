@@ -4,6 +4,7 @@ application or as an AWS Lambda pair."""
 import json
 import os
 import random
+import re
 import sys
 import traceback
 import typing
@@ -11,6 +12,16 @@ import typing
 import openai
 import requests
 
+
+def clean_response(text: str) -> str:
+    """Clean the OpenAI disclaimer nonsense from a response."""
+
+    # Remove the "As an AI language model, ..." sentence
+    m = re.match(r"^As an AI language model, [^.;]+[.;] (.*)", text)
+    if m is not None:
+        text = m.group(1)
+
+    return text
 
 def generate_text(system, prompt):
     """Generate the chatgpt text"""
@@ -22,7 +33,7 @@ def generate_text(system, prompt):
     messages.append({"role":"user", "content": prompt})
     response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages)
     reply = response['choices'][0]['message']['content']
-    return reply
+    return clean_response(reply)
 
 
 def validate_prompt(prompt):
