@@ -147,13 +147,10 @@ def chatgpt(event, _):
 		        		"type": "mrkdwn",
 		        		"text": f'{user} asked chatgpt: "{prompt}":'
 		        	}
-		        },
+		        }],
+                "attachments": [
 		        {
-		        	"type": "section",
-		        	"text": {
-		        		"type": "mrkdwn",
-		        		"text": f">>>{response}"
-		        	}
+                    "text": f"{response}"
 		        }
             ]}), timeout=10000)
 
