@@ -1,6 +1,7 @@
 """Generate chatgpt text for slack. Designed to run as either a command-line
 application or as an AWS Lambda pair."""
 
+import argparse
 import json
 import os
 import random
@@ -107,7 +108,29 @@ def get_system_message(user: str) -> str:
         return ""
     return random.choice(manips).generate()
 
+def parse_args(input_str):
+    """Parse any flags and directives
 
+    Returns
+    -------
+    The prompt to generate and the text to display.
+    """
+    opts = input_str.split(' ')
+    parser = argparse.ArgumentParser(
+        description='Generate chatgpt text')
+    parser.add_argument('prompt', nargs='+', help='The text of the prompt')
+    parser.add_argument('-e', action='store_true',
+                        help='Tell chatgpt to only respond with emojis')
+
+    args = parser.parse_args(opts)
+    text = ' '.join(args.prompt)
+    if args.e:
+        text += ' [Respond only with emojis. No text.]'
+
+    display_text = text.split('[', maxsplit=1)[0].strip()
+    prompt_text = text.replace('[', '').replace(']', '')
+
+    return (display_text, prompt_text)
 
 def chatgpt(event, _):
     """Entry point for the lambda that actually generates the image."""
@@ -118,8 +141,10 @@ def chatgpt(event, _):
         print(f"SNS MESSAGE: {event['Records'][0]['Sns']['Message']}")
         message = json.loads(event['Records'][0]['Sns']['Message'])
         response_url = message['response_url']
-        prompt = message['prompt']
+        input_str = message['prompt']
         user = message['user']
+
+        (display, prompt) = parse_args(input_str)
 
         # Don't actually validate the prompt because it gives different results than when chatgpt
         # actually flags.
@@ -134,6 +159,7 @@ def chatgpt(event, _):
 
         # Process the command.
         system_message = get_system_message(user)
+        print('DISPLAY TEXT: ' + display)
         print('GENERATE TEXT: ' + system_message + ", "+ prompt)
         response = generate_text(system_message, prompt)
 
@@ -145,7 +171,7 @@ def chatgpt(event, _):
 		        	"type": "section",
 		        	"text": {
 		        		"type": "mrkdwn",
-		        		"text": f'{user} asked chatgpt: "{prompt}":'
+		        		"text": f'{user} asked chatgpt: "{display}":'
 		        	}
 		        }],
                 "attachments": [
@@ -162,12 +188,9 @@ def chatgpt(event, _):
 
 def main():
     """Process the command given on the command line."""
-    prompt = ' '.join(sys.argv[1:])
-    # validation = validate_prompt(prompt)
-    # print(validation)
-    # if validation['flagged']:
-    #     print('VALIDATION FAILED')
-    #     return
+    (display, prompt) = parse_args(' '.join(sys.argv[1:]))
+    print(f'Display: {display}')
+    print(f'Prompt: {prompt}')
     response = generate_text("Make all responses saxon themed", prompt)
     print(response)
 
