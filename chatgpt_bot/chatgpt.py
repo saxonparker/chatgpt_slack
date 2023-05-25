@@ -18,7 +18,7 @@ def clean_response(text: str) -> str:
     """Clean the OpenAI disclaimer nonsense from a response."""
 
     # Remove the "As an AI language model, ..." sentence
-    m = re.match(r"^As an AI language model, [^.;]+[.;] (.*)", text)
+    m = re.match(r"^As an AI language model, [^.;]+[.;] ((?:\n|\r|.)*)", text, re.MULTILINE)
     if m is not None:
         text = m.group(1)
 
