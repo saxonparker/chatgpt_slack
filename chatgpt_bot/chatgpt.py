@@ -34,6 +34,7 @@ def generate_text(system, prompt):
     messages.append({"role":"user", "content": prompt})
     response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages)
     reply = response['choices'][0]['message']['content']
+    print("FULL REPLY: " + reply)
     return clean_response(reply)
 
 
@@ -127,7 +128,8 @@ def parse_args(input_str):
     if args.e:
         text += ' [Respond only with emojis. No text.]'
 
-    display_text = text.split('[', maxsplit=1)[0].strip()
+    split_text = text.split('[')
+    display_text = split_text[0].strip() + split_text[1].split(']')[1]
     prompt_text = text.replace('[', '').replace(']', '')
 
     return (display_text, prompt_text)
