@@ -1,5 +1,5 @@
 chatgpt.zip: chatgpt.py Pipfile.lock
-	#pylint chatgpt.py
+	pylint --max-line-length=120 chatgpt.py
 	rm -rf build
 	mkdir -p build
 	cp chatgpt.py build
@@ -9,7 +9,7 @@ chatgpt.zip: chatgpt.py Pipfile.lock
 	rm -rf build
 
 chatgpt_dispatch.zip: chatgpt_dispatch.py Pipfile_dispatch.lock
-	pylint chatgpt_dispatch.py
+	pylint --max-line-length=120 chatgpt_dispatch.py
 	rm -rf build_dispatch
 	mkdir -p build_dispatch
 	cp chatgpt_dispatch.py build_dispatch
@@ -17,3 +17,7 @@ chatgpt_dispatch.zip: chatgpt_dispatch.py Pipfile_dispatch.lock
 	rm -rf build_dispatch/boto*
 	cd build_dispatch && zip -r ../chatgpt_dispatch.zip .
 	rm -rf build_dispatch
+
+check:
+	pylint --max-line-length=120 *.py
+	pytest
