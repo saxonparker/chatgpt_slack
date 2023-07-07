@@ -35,7 +35,7 @@ def generate_text(system, prompt):
     if len(system) > 0:
         messages.append({"role": "system", "content": system})
     messages.append({"role": "user", "content": prompt})
-    response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages)
+    response = openai.ChatCompletion.create(model="gpt-4", messages=messages)
     reply = response["choices"][0]["message"]["content"]
     print("FULL REPLY: " + reply)
     return clean_response(reply)
