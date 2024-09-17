@@ -35,8 +35,8 @@ def generate_text(system, prompt):
     if len(system) > 0:
         messages.append({"role": "system", "content": system})
     messages.append({"role": "user", "content": prompt})
-    response = openai.ChatCompletion.create(model="gpt-4", messages=messages)
-    reply = response["choices"][0]["message"]["content"]
+    response = openai.chat.completions.create(model="gpt-4o", messages=messages)
+    reply = response.choices[0].message.content
     print("FULL REPLY: " + reply)
     return clean_response(reply)
 
@@ -232,7 +232,7 @@ def main():
     (display, prompt) = parse_args(" ".join(sys.argv[1:]))
     print(f"Display: {display}")
     print(f"Prompt: {prompt}")
-    response = generate_text("Make all responses saxon themed", prompt)
+    response = generate_text("", prompt)
     print(response)
 
 
