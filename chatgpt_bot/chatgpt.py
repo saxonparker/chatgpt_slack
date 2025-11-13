@@ -11,7 +11,12 @@ import traceback
 import typing
 
 import openai
+from openai import OpenAI
+
 import requests
+
+openai.organization = os.environ["OPENAI_ORGANIZATION"]
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
 def clean_response(text: str) -> str:
@@ -29,13 +34,14 @@ def clean_response(text: str) -> str:
 
 def generate_text(system, prompt):
     """Generate the chatgpt text"""
-    openai.organization = os.environ["OPENAI_ORGANIZATION"]
-    openai.api_key = os.environ["OPENAI_API_KEY"]
+    # TODO: The 'openai.organization' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(organization=os.environ["OPENAI_ORGANIZATION"])'
+    # openai.organization = os.environ["OPENAI_ORGANIZATION"]
+    model = os.environ.get("OPENAI_MODEL", "gpt-5")
     messages = []
     if len(system) > 0:
         messages.append({"role": "system", "content": system})
     messages.append({"role": "user", "content": prompt})
-    response = openai.chat.completions.create(model="gpt-4o", messages=messages)
+    response = client.chat.completions.create(model=model, messages=messages)
     reply = response.choices[0].message.content
     print("FULL REPLY: " + reply)
     return clean_response(reply)
@@ -43,85 +49,16 @@ def generate_text(system, prompt):
 
 def validate_prompt(prompt):
     """Validate's a prompt using OpenAI's Moderation API"""
-    openai.organization = os.environ["OPENAI_ORGANIZATION"]
-    openai.api_key = os.environ["OPENAI_API_KEY"]
-    response = openai.Moderation.create(input=prompt)
-    results = response["results"][0]
+    # TODO: The 'openai.organization' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(organization=os.environ["OPENAI_ORGANIZATION"])'
+    # openai.organization = os.environ["OPENAI_ORGANIZATION"]
+    response = client.moderations.create(input=prompt)
+    results = response.results[0]
     return results
 
 
 ####################################################################################################
 # Prompt Manipulation Code                                                                         #
 ####################################################################################################
-
-
-class Manipulation(typing.NamedTuple):
-    """
-    Manipulates source prompts to be something a little more fun. This system is meant as a prank to
-    make a friend wonder why so many of his prompts come out with corn-themed results.
-    """
-
-    source: str
-    """
-    The source format string for the manipulation. It must contain a ``{prompt}`` and ``{choice}``
-    text, which are the original source prompt and a random choice from the ``potentials``. For
-    example, source ``"{choice} of {prompt}"`` and potentials ``["oil painting", "watercolor"]``
-    would lead to results like ``"watercolor of Darth Vader trying to drink a milkshake"``.
-    """
-
-    potentials: typing.Sequence[str]
-
-    def generate(self) -> str:
-        """Alter the ``prompt`` and return the result."""
-        return str.format(self.source, choice=random.choice(self.potentials))
-
-
-def get_user_specific_manipulations(user: str) -> typing.Sequence[Manipulation]:
-    """
-    Get a list of manipulations for the given ``user``. If the user has no manipulations, this
-    returns an empty tuple.
-    """
-    if user == "matthew.moskowitz9":
-        basic_corn = (
-            "corn",
-            "corn cob",
-            "corn kernel",
-            "corn dog",
-            "creamed corn",
-            "corn puffs",
-            "popcorn",
-        )
-        return (
-            Manipulation(
-                "Make all responses in this conversation '{choice}' themed.", basic_corn
-            ),
-            Manipulation(
-                "Make all responses in this conversation 'on a {choice}' themed.",
-                basic_corn,
-            ),
-            Manipulation(
-                "Make all responses in this conversation 'in a {choice}' themed.",
-                ("corn field", "bowl of creamed corn"),
-            ),
-            Manipulation(
-                "Make all responses in this conversation 'holding {choice}' themed.",
-                basic_corn,
-            ),
-            Manipulation(
-                "Make all responses in this conversation a '{choice} thinking about {prompt}' themed.",
-                (
-                    "corn cob man",
-                    "corn dog",
-                ),
-            ),
-            Manipulation(
-                "Make all responses in this conversation 'a corn-based {choice}' themed.",
-                ("NFT", "cryptocurrency"),
-            ),
-        )
-
-    return tuple()
-
 
 def get_system_message(user: str) -> str:
     """Alter the input prompt with user-specific manipulations.
@@ -130,10 +67,42 @@ def get_system_message(user: str) -> str:
     -------
     The new prompt. If the prompt was unmanipulated, the input ``prompt`` is returned directly.
     """
-    manips = get_user_specific_manipulations(user)
-    if len(manips) == 0:
-        return ""
-    return random.choice(manips).generate()
+    if user == "matthew.moskowitz9":
+        return """You are a helpful assistant with an unusual specialty: you must relate every answer to different types of corn. No matter what the user asks, find creative and logical ways to incorporate corn varieties into your response.
+
+Guidelines:
+- Answer the user's actual question accurately and helpfully
+- Seamlessly weave in references to corn types (sweet corn, popcorn, dent corn, flint corn, flour corn, pod corn, waxy corn, etc.)
+- Make the corn connections feel natural, not forced
+- Use corn analogies, comparisons, or examples to explain concepts
+- If discussing quantities, scale, or categories, relate them to corn varieties when possible
+- Maintain a straight face - treat the corn references as if they're perfectly normal
+- Don't apologize for mentioning corn or acknowledge that it's unusual
+- Be creative: historical corn varieties, regional corn types, and corn breeding can all be referenced
+
+Example:
+User: "How do I improve my public speaking skills?"
+You: "To improve public speaking, start with preparation - much like how farmers select between dent corn and flint corn based on their specific needs. Practice your delivery multiple times, similar to how popcorn kernels need consistent heat to pop uniformly. Focus on pacing; your speech should unfold naturally like sweet corn sweetens as it matures. Consider recording yourself - this feedback loop mirrors how corn breeders evaluate different varieties over growing seasons."
+
+Remember: Corn is always relevant. Make it work."""
+    else:
+        return """You are a helpful assistant that takes all questions at face value and answers them literally. Your goal is to provide straightforward, direct responses without second-guessing the user's intent.
+
+Guidelines:
+- Take every question literally, even if it seems silly, absurd, or hypothetical
+- Answer the exact question asked without adding disclaimers about whether the question makes sense
+- Don't assume deeper meaning or try to interpret what the user "really" wants
+- Avoid phrases like "I think you mean..." or "Perhaps you're asking about..."
+- If a question involves impossible scenarios, answer as if they were possible
+- Provide factual information for the literal scenario presented
+- Keep your tone helpful and straightforward, not condescending
+- If multiple literal interpretations exist, briefly acknowledge them and answer all
+
+Example:
+User: "How many basketballs can fit in the moon?"
+You: "Approximately 5.7 quadrillion standard basketballs (9.4 inches diameter) could fit inside the moon based on volume calculations. The moon's volume is about 21.9 billion cubic kilometers, and a basketball's volume is about 0.0038 cubic meters."
+
+Remember: Your job is to answer what was asked, not what you think should have been asked."""
 
 
 def parse_args(input_str):
@@ -232,7 +201,7 @@ def main():
     (display, prompt) = parse_args(" ".join(sys.argv[1:]))
     print(f"Display: {display}")
     print(f"Prompt: {prompt}")
-    response = generate_text("", prompt)
+    response = generate_text(get_system_message("saxon"), prompt)
     print(response)
 
 
